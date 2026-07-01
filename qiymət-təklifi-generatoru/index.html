@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8">
+  <title>Qiymət Təklifi (Oflayn)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --gold: #D4AF37;
+      --gold-dark: #b8860b;
+      --dark: #1a1915;
+      --gray: #f3f4f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background: #e2e8f0; display: flex; height: 100vh; overflow: hidden; }
+
+    .sidebar { width: 380px; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1); padding: 20px; overflow-y: auto; z-index: 10; display: flex; flex-direction: column; }
+    .sidebar h2 { font-size: 15px; margin-bottom: 15px; color: var(--dark); border-bottom: 2px solid var(--gray); padding-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 12px; font-weight: bold; color: #4b5563; margin-bottom: 4px; }
+    .form-control { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 13px; outline: none; }
+    .form-control:focus { border-color: var(--gold); }
+    .row { display: flex; gap: 10px; }
+    .row > div { flex: 1; }
+
+    .btn { padding: 10px; background: var(--dark); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; font-size: 13px; }
+    .btn:hover { background: #000; }
+    .btn-gold { background: var(--gold); color: white; margin-top: 10px; font-size: 14px; padding: 12px; }
+    .btn-gold:hover { background: var(--gold-dark); }
+
+    .payment-options { display: flex; gap: 10px; margin-bottom: 20px;}
+    .payment-btn { flex: 1; padding: 10px; border: 1px solid #d1d5db; background: white; cursor: pointer; border-radius: 4px; font-weight: bold; color: #4b5563; font-size: 13px; transition: 0.2s; }
+    .payment-btn.active { border-color: var(--gold); background: #fef9e7; color: var(--gold-dark); }
+
+    .product-list { margin-top: 15px; flex: 1; overflow-y: auto; }
+    .product-item { background: #f9fafb; border: 1px solid #e5e7eb; padding: 10px; border-radius: 4px; margin-bottom: 8px; position: relative; }
+    .product-item h4 { font-size: 13px; margin-bottom: 4px; color: #111827; }
+    .product-item p { font-size: 12px; color: #6b7280; }
+    .btn-action { background: transparent; border: none; font-size: 16px; cursor: pointer; line-height: 1; padding: 4px; border-radius: 4px; }
+    .btn-action:hover { background: #e5e7eb; }
+
+    .main { flex: 1; padding: 20px; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; }
+    .invoice-wrapper { background: white; width: 210mm; min-height: 296mm; padding: 16mm 16mm 12mm 16mm; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; color: var(--dark); }
+
+    .inv-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--gold); padding-bottom: 12px; }
+    .inv-logo-area { display: flex; align-items: center; gap: 12px; }
+    .vms-logo { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .vms-logo-img { width: 100%; height: 100%; object-fit: contain; }
+    
+    .inv-header-title { font-weight: bold; font-size: 20px; }
+    .inv-header-right { font-size: 18px; font-weight: 600; color: var(--gold-dark); }
+
+    .inv-title-section { text-align: center; margin: 24px 0; }
+    .inv-title { font-size: 24px; font-weight: 900; letter-spacing: 2px; }
+    .inv-subtitle { font-size: 14px; font-style: italic; color: #374151; margin-top: 8px; }
+    .inv-subtitle::before { content: "— "; color: #374151; }
+    .inv-subtitle::after { content: " —"; color: #374151; }
+
+    .inv-details { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 24px; padding-bottom: 0; }
+    .inv-details strong { color: #111827; }
+
+    .inv-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 24px; border: 1px solid var(--gold); table-layout: fixed; }
+    .inv-table th { background: #191814; color: white; padding: 10px; text-align: center; font-weight: bold; border: 1px solid var(--gold); font-size: 13px; }
+    .inv-table td { padding: 10px; border: 1px solid var(--gold); word-break: break-word; overflow-wrap: break-word; white-space: normal; }
+    .inv-table th:last-child, .inv-table td:last-child { border-right: 1px solid var(--gold); }
+    .inv-table th.center, .inv-table td.center { text-align: center; }
+    .inv-table th.right, .inv-table td.right { text-align: right; }
+    .inv-table tbody tr { background: white; page-break-inside: avoid; }
+
+    .inv-summary-row-vat { background: #fff; }
+    .inv-summary-row-total { background: #fdf8e7; font-weight: bold; color: var(--gold-dark); }
+
+    .inv-note { font-size: 14px; margin: 30px 0; }
+    .inv-note strong { color: var(--gold-dark); font-style: italic; }
+    .inv-note span { font-style: italic; color: #374151; }
+
+    .inv-signatures { margin-top: 30px; font-size: 14px; }
+
+    .inv-footer { text-align: center; font-size: 11px; color: #6b7280; border-top: 2px solid var(--gold); padding-top: 12px; margin-top: 40px; font-weight: 500;}
+
+    @media print {
+      @page { size: A4; margin: 0; }
+      body { background: white; display: block; height: auto; overflow: visible; }
+      .sidebar, .no-print { display: none !important; }
+      .main { padding: 0; display: block; }
+      .invoice-wrapper { box-shadow: none; padding: 16mm 16mm 12mm 16mm; margin: 0; width: 210mm; min-height: 296mm; page-break-after: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="sidebar no-print">
+  <h2>Məhsul Əlavə Et</h2>
+  <div class="form-group">
+    <label>Məhsulun adı</label>
+    <textarea id="p-name" class="form-control" placeholder="Məs: Yataq" rows="3" style="resize: vertical;"></textarea>
+  </div>
+  <div class="row">
+    <div class="form-group">
+      <label>Miqdar</label>
+      <input type="number" id="p-qty" class="form-control" value="1" min="0.1" step="any">
+    </div>
+    <div class="form-group">
+      <label>Ölçü vahidi</label>
+      <select id="p-unit" class="form-control">
+        <option value="ədəd">ədəd</option>
+        <option value="metr">metr</option>
+        <option value="m²">m²</option>
+        <option value="komplekt">komplekt</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Vahid qiymət (AZN)</label>
+    <input type="number" id="p-price" class="form-control" placeholder="0.00" step="any">
+  </div>
+  <button id="btn-add-product" class="btn" onclick="addProduct()">Siyahıya Əlavə Et</button>
+
+  <h2 style="margin-top: 25px;">Ödəniş Üsulu</h2>
+  <div class="payment-options">
+    <button id="btn-cash" class="payment-btn" onclick="setPayment('cash')">Nağd</button>
+    <button id="btn-transfer" class="payment-btn active" onclick="setPayment('transfer')">Köçürmə (ƏDV)</button>
+  </div>
+
+  <h2>Sifarişçi & Obyekt</h2>
+  <div class="form-group">
+    <label>Sifarişçi</label>
+    <input type="text" id="f-client" class="form-control" value="Asnaf Sənaye Şirkəti" oninput="updateInvoice()">
+  </div>
+  <div class="form-group">
+    <label>Obyekt</label>
+    <input type="text" id="f-object" class="form-control" value="Parkside Hotel & Apartments" oninput="updateInvoice()">
+  </div>
+  <div class="form-group">
+    <label>Tarix</label>
+    <input type="text" id="f-date" class="form-control" oninput="updateInvoice()">
+  </div>
+  
+  <button class="btn btn-gold" onclick="downloadPDF()">PDF Kimi Yadda Saxla</button>
+
+  <div class="product-list" id="product-list"></div>
+</div>
+
+<div class="main">
+  <div class="invoice-wrapper" id="print-area">
+    <div class="inv-header">
+      <div class="inv-logo-area">
+        <div class="vms-logo"><img src="/logovmsc.png" class="vms-logo-img" alt="VMS"/></div>
+        <div class="inv-header-title">VMSC MMC</div>
+      </div>
+      <div class="inv-header-right">Qiymət Təklifi</div>
+    </div>
+
+    <div class="inv-title-section">
+      <div style="display:flex; justify-content:center; margin-bottom:12px;">
+        <div class="vms-logo" style="width:64px; height:64px; font-size:22px;">
+           <img src="logovmsc.png" class="vms-logo-img" alt="VMS"/>
+        </div>
+      </div>
+      <div class="inv-title">QİYMƏT TƏKLİFİ</div>
+      <div class="inv-subtitle"><span id="inv-client-sub">Asnaf Sənaye Şirkəti</span> <span id="inv-object-sub-container">— <span id="inv-object-sub">Parkside Hotel & Apartments</span></span> üçün</div>
+    </div>
+
+    <div class="inv-details">
+      <div style="line-height: 1.6;">
+        <div><strong>Sifarişçi:</strong> <span id="inv-client">Asnaf Sənaye Şirkəti</span></div>
+        <div><strong>Obyekt:</strong> <span id="inv-object">Parkside Hotel & Apartments</span></div>
+      </div>
+      <div style="text-align: right; line-height: 1.6;">
+        <div><strong>Bakı ş.</strong></div>
+        <div><strong>Tarix:</strong> <span id="inv-date"></span></div>
+      </div>
+    </div>
+
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th width="6%" class="center">№</th>
+          <th width="39%" class="center">Mal adı</th>
+          <th width="10%" class="center">Vahidi</th>
+          <th width="10%" class="center">Miqdar</th>
+          <th width="15%" class="center">Vah.Qiymət<br>(AZN)</th>
+          <th width="20%" class="center">Məbləğ<br>(AZN)</th>
+        </tr>
+      </thead>
+      <tbody id="inv-tbody"></tbody>
+      <tfoot id="inv-tfoot"></tfoot>
+    </table>
+
+    <div class="inv-note">
+      <strong>Qeyd:</strong> <span>Bu qiymət təklifi 15 (on beş) təqvim günü ərzində keçərlidir.</span>
+    </div>
+
+    <div class="inv-signatures">
+      <div>
+        <div style="font-weight:bold; font-size:16px;">VMSC MMC</div>
+        <div style="margin-top:4px;"><span style="font-weight:bold;">Direktor:</span> Mövsümov Vüqar Camal oğlu</div>
+      </div>
+    </div>
+
+    <div class="inv-footer">
+      VMSC MMC • Bakı, Azərbaycan • Tel: +994 50 253 34 51
+    </div>
+  </div>
+</div>
+
+<script>
+  let products = [
+    { id: 1, name: 'Yataq (200×90 sm)', unit: 'ədəd', qty: 2, price: 490 },
+    { id: 2, name: 'Kürəklik (300×40 sm)', unit: 'ədəd', qty: 1, price: 440 },
+    { id: 3, name: 'Arakəsmə sütun 2 qollu (410×125×20 sm)', unit: 'ədəd', qty: 1, price: 1800 }
+  ];
+  let paymentMethod = 'transfer';
+
+  function formatDate(date) {
+    let d = date.getDate().toString().padStart(2, '0');
+    let m = (date.getMonth() + 1).toString().padStart(2, '0');
+    let y = date.getFullYear();
+    return `${d}.${m}.${y}`;
+  }
+
+  document.getElementById('f-date').value = formatDate(new Date());
+
+  function formatMoney(num) {
+    if(isNaN(num)) return '0.0';
+    let rounded = Math.round(num * 100) / 100;
+    let str = rounded.toFixed(2);
+    if (str.endsWith('0')) str = rounded.toFixed(1);
+    return str;
+  }
+
+  function setPayment(method) {
+    paymentMethod = method;
+    document.getElementById('btn-cash').className = method === 'cash' ? 'payment-btn active' : 'payment-btn';
+    document.getElementById('btn-transfer').className = method === 'transfer' ? 'payment-btn active' : 'payment-btn';
+    renderInvoice();
+  }
+
+  let editingId = null;
+
+  function addProduct() {
+    const name = document.getElementById('p-name').value.trim();
+    const qty = parseFloat(document.getElementById('p-qty').value);
+    const unit = document.getElementById('p-unit').value;
+    const price = parseFloat(document.getElementById('p-price').value);
+
+    if(!name || isNaN(qty) || isNaN(price)) {
+      alert('Zəhmət olmasa məhsulun adı, miqdarı və qiymətini düzgün daxil edin.');
+      return;
+    }
+
+    if (editingId) {
+      const p = products.find(x => x.id === editingId);
+      if (p) {
+        p.name = name;
+        p.qty = qty;
+        p.unit = unit;
+        p.price = price;
+      }
+      editingId = null;
+      document.getElementById('btn-add-product').innerText = 'Siyahıya Əlavə Et';
+      document.getElementById('btn-add-product').style.backgroundColor = 'var(--dark)';
+    } else {
+      products.push({ id: Date.now(), name, qty, unit, price });
+    }
+    
+    document.getElementById('p-name').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-qty').value = '1';
+    
+    renderInvoice();
+  }
+
+  function editProduct(id) {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('p-name').value = p.name;
+    document.getElementById('p-qty').value = p.qty;
+    document.getElementById('p-unit').value = p.unit;
+    document.getElementById('p-price').value = p.price;
+    editingId = id;
+    
+    const btn = document.getElementById('btn-add-product');
+    btn.innerText = 'Dəyişikliyi Yadda Saxla';
+    btn.style.backgroundColor = '#0284c7';
+  }
+
+  function removeProduct(id) {
+    products = products.filter(p => p.id !== id);
+    renderInvoice();
+  }
+  
+
+
+  function updateInvoice() {
+    const client = document.getElementById('f-client').value.trim() || '—';
+    const obj = document.getElementById('f-object').value.trim() || '—';
+    const date = document.getElementById('f-date').value.trim() || '—';
+
+    document.getElementById('inv-client').innerText = client;
+    document.getElementById('inv-client-sub').innerText = client;
+    document.getElementById('inv-object').innerText = obj;
+    
+    if (obj === '—' || obj === '') {
+       document.getElementById('inv-object-sub-container').style.display = 'none';
+    } else {
+       document.getElementById('inv-object-sub-container').style.display = 'inline';
+       document.getElementById('inv-object-sub').innerText = obj;
+    }
+    
+    document.getElementById('inv-date').innerText = date;
+  }
+
+  function renderInvoice() {
+    const tbody = document.getElementById('inv-tbody');
+    const tfoot = document.getElementById('inv-tfoot');
+    const list = document.getElementById('product-list');
+    tbody.innerHTML = '';
+    tfoot.innerHTML = '';
+    list.innerHTML = '';
+
+    let subtotal = 0;
+
+    if (products.length === 0) {
+       tbody.innerHTML = '<tr><td colspan="6" class="center" style="color:#9ca3af; font-style:italic; padding: 20px;">Siyahı boşdur...</td></tr>';
+    }
+
+    products.forEach((p, index) => {
+      const rowTotal = p.qty * p.price;
+      subtotal += rowTotal;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="center" style="color:#6b7280; font-weight:500;">${index + 1}</td>
+        <td style="font-weight:500;"><div style="width: 250px; white-space: normal; word-wrap: break-word; word-break: break-word; line-height: 1.4;">${p.name}</div></td>
+        <td class="center" style="color:#4b5563;">${p.unit}</td>
+        <td class="center" style="font-weight:600;">${p.qty}</td>
+        <td class="right" style="font-family:monospace; color:#374151;">${formatMoney(p.price)}</td>
+        <td class="right" style="font-weight:bold; font-family:monospace;">${formatMoney(rowTotal)}</td>
+      `;
+      tbody.appendChild(tr);
+
+      const item = document.createElement('div');
+      item.className = 'product-item';
+      item.innerHTML = `
+        <div style="padding-right: 60px;">
+          <h4>${index + 1}. ${p.name}</h4>
+          <p>${p.qty} ${p.unit} × ${formatMoney(p.price)} AZN = <strong style="color:#111827;">${formatMoney(rowTotal)} AZN</strong></p>
+        </div>
+        <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 4px;">
+          <button class="btn-action" style="color: #0284c7;" onclick="editProduct(${p.id})" title="Düzəliş et">✎</button>
+          <button class="btn-action" style="color: #ef4444;" onclick="removeProduct(${p.id})" title="Sil">×</button>
+        </div>
+      `;
+      list.appendChild(item);
+    });
+
+    let vat = 0;
+    if (paymentMethod === 'transfer') {
+      vat = subtotal * 0.18;
+    }
+
+    const total = subtotal + vat;
+
+    let tfootHtml = `
+      <tr>
+        <td colspan="4" style="border: 1px solid var(--gold); border-right: none;"></td>
+        <td class="right" style="font-weight: bold; border: 1px solid var(--gold); border-left: 1px solid var(--gold);">Cəmi:</td>
+        <td class="right" style="font-weight: bold; border: 1px solid var(--gold);">${formatMoney(subtotal)} AZN</td>
+      </tr>
+    `;
+
+    if (paymentMethod === 'transfer') {
+      tfootHtml += `
+        <tr>
+          <td colspan="4" style="border: 1px solid var(--gold); border-right: none;"></td>
+          <td class="right" style="font-weight: bold; border: 1px solid var(--gold); border-left: 1px solid var(--gold);">ƏDV (18%):</td>
+          <td class="right" style="font-weight: bold; border: 1px solid var(--gold);">${formatMoney(vat)} AZN</td>
+        </tr>
+      `;
+    }
+
+    tfootHtml += `
+      <tr class="inv-summary-row-total">
+        <td colspan="4" style="border: 1px solid var(--gold); border-right: none;"></td>
+        <td class="right" style="font-weight: bold; border: 1px solid var(--gold); border-left: 1px solid var(--gold);">Yekun<br>Məbləğ:</td>
+        <td class="right" style="font-weight: bold; border: 1px solid var(--gold);">${formatMoney(total)} AZN</td>
+      </tr>
+    `;
+
+    tfoot.innerHTML = tfootHtml;
+
+    updateInvoice();
+  }
+
+  function downloadPDF() {
+    const element = document.getElementById('print-area');
+    
+    // Temporarily remove box shadow for cleaner PDF
+    const originalShadow = element.style.boxShadow;
+    const originalMinHeight = element.style.minHeight;
+    element.style.boxShadow = 'none';
+    element.style.minHeight = 'auto'; // Prevent extra blank page
+    
+    const clientName = document.getElementById('f-client').value.trim().replace(/[^a-zA-Z0-9]/g, '_');
+    const dateStr = document.getElementById('f-date').value.trim().replace(/\./g, '-');
+    const fileName = `Qiymet_Teklifi_${clientName}_${dateStr}.pdf`;
+
+    const opt = {
+      margin:       0,
+      filename:     fileName,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: 'css', avoid: 'tr' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+      // Restore styles
+      element.style.boxShadow = originalShadow;
+      element.style.minHeight = originalMinHeight;
+    });
+  }
+
+  renderInvoice();
+</script>
+</body>
+</html>
+

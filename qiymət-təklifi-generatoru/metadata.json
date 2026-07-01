@@ -1,0 +1,6 @@
+{
+  "name": "Qiymət Təklifi Generatoru",
+  "description": "Məhsul adı, miqdar, vahid qiyməti və ödəniş növünə (nağd/köçürmə ƏDV 18%) əsasən rəsmi Qiymət Təklifi yaradan və PDF kimi yükləyən alət.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
